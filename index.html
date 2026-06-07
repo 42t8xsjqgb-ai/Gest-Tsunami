@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PERDIRFORMANCE GEST-TSUNAMI V1</title>
+    
+    <!-- Librairie Leaflet pour la cartographie -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #1A2530;
+            --bg-panel: #2C3E50;
+            --accent: #F39C12;
+            --accent-hover: #D68910;
+            --text-light: #ECF0F1;
+            --border: #34495E;
+            --header-height: 60px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            overflow: hidden;
+        }
+
+        /* --- EN-TÊTE (TOP BAR) --- */
+        #top-header {
+            height: var(--header-height);
+            background-color: var(--accent);
+            border-bottom: 3px solid #D68910;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: baseline;
+            gap: 15px;
+        }
+
+        .header-brand h1 {
+            font-size: 1.5rem;
+            color: #fff;
+            letter-spacing: 0.5px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        /* --- MISE EN PAGE PRINCIPALE --- */
+        #main-content {
+            display: flex;
+            height: calc(100vh - var(--header-height) - 30px);
+            width: 100%;
+        }
+
+        /* --- PANNEAU LATÉRAL --- */
+        #sidebar {
+            width: 360px;
+            min-width: 360px;
+            background-color: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+
+        .section {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-title {
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+            color: #BDC3C7;
+        }
+
+        input[type="text"], select {
+            width: 100%;
+            padding: 10px;
+            background-color: #1A2530;
+            border: 1px solid var(--border);
+            color: var(--text-light);
+            border-radius: 4px;
+            outline: none;
+            font-size: 1rem;
+        }
+        
+        input[type="text"]:focus, select:focus {
+            border-color: var(--accent);
+        }
+
+        /* --- BOUTONS --- */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 15px;
+            background-color: var(--bg-dark);
+            color: #fff;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-full {
+            width: 100%;
+            padding: 10px;
+        }
+
+        .btn:hover:not(:disabled) { background-color: #34495E; transform: translateY(-1px); }
+        .btn-action { background-color: #2980B9; border: none; }
+        .btn-action:hover:not(:disabled) { background-color: #2471A3; }
+        .btn-accent { background-color: var(--accent); border: none; color: white;}
+        .btn-accent:hover:not(:disabled) { background-color: var(--accent-hover); }
+        .btn-danger { background-color: #E74C3C; border: none; }
+        .btn-danger:hover:not(:disabled) { background-color: #C0392B; }
+        
+        .btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .flex-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .scan-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .btn-scan {
+            font-size: 0.85rem;
+            padding: 8px 4px;
+            border: none;
+            color: white;
+        }
+
+        /* --- LISTE DES EPLE --- */
+        #eple-list-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 15px 20px;
+        }
+
+        .eple-card {
+            background-color: #1A2530;
+            border-left: 4px solid var(--accent);
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .eple-card h4 {
+            margin: 0 0 5px 0;
+            font-size: 0.95rem;
+            color: #ECF0F1;
+            padding-right: 25px;
+        }
+
+        .eple-card .details {
+            font-size: 0.85rem;
+            color: #BDC3C7;
+            margin-bottom: 8px;
+        }
+
+        .eple-card .altitude {
+            display: inline-block;
+            background-color: rgba(243, 156, 18, 0.2);
+            color: var(--accent);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+
+        .eple-card .actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .btn-del-eple {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #E74C3C;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        .btn-del-eple:hover { color: #C0392B; }
+
+        /* --- CARTE LEAFLET --- */
+        #map-container {
+            flex-grow: 1;
+            position: relative;
+            z-index: 1;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #EAECEE;
+            cursor: crosshair; /* Transforme la souris en pointe de visée */
+        }
+
+        /* Custom Popup Leaflet */
+        .leaflet-popup-content-wrapper {
+            background-color: var(--bg-panel);
+            color: var(--text-light);
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+        }
+        .leaflet-popup-tip { background-color: var(--bg-panel); border: 1px solid var(--accent); }
+        .leaflet-popup-content h3 { margin: 0 0 5px 0; color: var(--accent); font-size: 1rem; }
+        .leaflet-popup-content p { margin: 0; color: #BDC3C7; font-size: 0.9rem; }
+        
+        .custom-pr-icon {
+            background: transparent;
+            border: none;
+        }
+
+        /* --- PIED DE PAGE --- */
+        #main-footer {
+            height: 30px;
+            background-color: #EAECEE;
+            color: #7F8C8D;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            border-top: 1px solid #BDC3C7;
+            z-index: 20;
+        }
+
+        /* --- MODALE NOTICE --- */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(26, 37, 48, 0.8);
+            backdrop-filter: blur(4px);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.show { display: flex; }
+        .modal-content {
+            background-color: var(--bg-panel);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            padding: 30px;
+            position: relative;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .modal-content::-webkit-scrollbar { width: 8px; }
+        .modal-content::-webkit-scrollbar-track { background: var(--bg-panel); }
+        .modal-content::-webkit-scrollbar-thumb { background: #7F8C8D; border-radius: 4px; }
+        .modal-content::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+        .modal-content h2 { color: var(--accent); margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px;}
+        .modal-content h3 { color: #ECF0F1; margin-top: 20px; font-size: 1.1rem; margin-bottom: 10px;}
+        .modal-content p, .modal-content li { color: #BDC3C7; line-height: 1.6; font-size: 0.95rem;}
+        .modal-content ul { padding-left: 20px; margin-bottom: 15px; }
+        .close-btn { position: absolute; top: 20px; right: 25px; font-size: 2rem; color: #BDC3C7; cursor: pointer; line-height: 1;}
+        .close-btn:hover { color: #E74C3C; }
+
+        input[type="file"] { display: none; }
+
+        /* --- EFFET POINT LUMINEUX (PULSE) --- */
+        .pulse-dot {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background-color: #F39C12; /* Couleur d'accentuation plus visible (Orange) */
+            border-radius: 50%;
+            margin-left: 12px;
+            vertical-align: middle;
+            box-shadow: 0 0 0 0 rgba(243, 156, 18, 0.8);
+            animation: pulse-animation 1.5s infinite; /* Animation un peu plus rapide */
+        }
+
+        @keyframes pulse-animation {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(243, 156, 18, 0.8); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 12px rgba(243, 156, 18, 0); } /* Halo plus grand */
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(243, 156, 18, 0); }
+        }
+
+        /* Masquer le point lumineux quand le menu est déplié */
+        details[open] .pulse-dot {
+            display: none;
+        }
+
+        /* --- RADAR TOPOGRAPHIQUE --- */
+        .radar-panel {
+            background-color: rgba(26, 37, 48, 0.85);
+            border: 1px solid var(--accent);
+            border-left: 4px solid var(--accent);
+            border-radius: 6px;
+            padding: 10px 15px;
+            color: #ECF0F1;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            font-size: 0.85rem;
+            backdrop-filter: blur(4px);
+            min-width: 200px;
+            pointer-events: none; /* Permet de cliquer "à travers" le radar si besoin */
+            transition: all 0.2s ease;
+        }
+        .radar-title { font-weight: bold; color: var(--accent); margin-bottom: 8px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px;}
+        .radar-data { display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .radar-value { font-weight: bold; font-family: 'Consolas', monospace; letter-spacing: 0.5px;}
+        
+        .radar-scanning {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #2ECC71;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #2ECC71;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.2; } 100% { opacity: 1; } }
+
+        /* --- IMPRESSION --- */
+        @media print {
+            @page { margin: 0; size: landscape; }
+            body { background: white; }
+            #top-header, #sidebar, #main-footer, .modal, .leaflet-control-zoom, .radar-panel, .leaflet-control-layers { display: none !important; }
+            #main-content { height: 100vh; display: block; }
+            #map-container { height: 100vh; width: 100vw; }
+        }
+    </style>
+</head>
+<body>
+
+    <header id="top-header">
+        <div class="header-brand">
+            <h1>PERDIRFORMANCE GEST-TSUNAMI V1</h1>
+            <span id="current-datetime" style="color: #fff; opacity: 0.9; font-size: 0.95rem; font-weight: 500;"></span>
+        </div>
+        <div class="header-actions">
+            <div style="display: flex; flex-direction: column; gap: 4px; margin-right: 10px; border-right: 1px solid rgba(255,255,255,0.3); padding-right: 15px;">
+                <div style="background-color: #27AE60; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+                    📢 Se préparer à une évacuation en cas d'alerte :
+                </div>
+                <a href="https://exploit.univ-montp3.fr/m/" target="_blank" class="btn btn-action" style="font-size: 0.8rem; padding: 4px 8px; text-decoration: none; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+                    🗺️ Ouvrir l'outil d'exploitation (Univ-Montp3)
+                </a>
+            </div>
+            <button class="btn" id="btn-export">Exporter Liste (.json)</button>
+            <label class="btn" for="btn-import">Importer Liste (.json)</label>
+            <input type="file" id="btn-import" accept=".json">
+            <button class="btn btn-action" id="btn-print">🖨️ Imprimer la carte</button>
+            <button class="btn btn-accent" id="btn-notice">📖 Notice</button>
+        </div>
+    </header>
+
+    <div id="main-content">
+        
+        <aside id="sidebar">
+            <div class="section">
+                <div class="section-title">Recherche Établissement</div>
+                
+                <div class="form-group" style="margin-bottom: 12px; border-bottom: 1px dashed var(--border); padding-bottom: 12px;">
+                    <label>Sélection rapide (Données MENJ)</label>
+                    <select id="eple-select">
+                        <option value="">Chargement de l'annuaire...</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 8px;">
+                    <label>Ou saisissez un Code RNE / UAI</label>
+                    <div class="flex-row">
+                        <input type="text" id="rne-input" placeholder="Ex: 9710001A" style="text-transform: uppercase;">
+                        <button class="btn btn-accent" id="btn-search-rne" style="padding: 10px 20px;">Ajouter</button>
+                    </div>
+                </div>
+                <div id="rne-result" style="font-size: 0.85rem; margin-top: 5px; min-height: 20px;"></div>
+            </div>
+
+            <!-- Bouton d'analyse globale -->
+            <div class="section" style="padding-top: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border);">
+                <label style="display: block; font-size: 0.85rem; margin-bottom: 8px; color: #BDC3C7; font-weight: bold;">Détection globale par palier :</label>
+                
+                <div class="scan-grid">
+                    <button class="btn btn-scan" id="btn-scan-red" style="background-color: #E74C3C;">🔴 &lt; 10m</button>
+                    <button class="btn btn-scan" id="btn-scan-orange" style="background-color: #F39C12;">🟠 ≈ 10 à 12m</button>
+                    <button class="btn btn-scan" id="btn-scan-green" style="background-color: #2ECC71;">🟢 &gt; 12 à 30m</button>
+                    <button class="btn btn-scan" id="btn-scan-blue" style="background-color: #3498DB;">🔵 &ge; 30m</button>
+                </div>
+
+                <button class="btn btn-full" id="btn-clear-all" style="background-color: #7F8C8D; border: none; color: white;">🗑️ Tout effacer</button>
+                
+                <div id="scan-progress" style="font-size: 0.8rem; color: #BDC3C7; margin-top: 8px; text-align: center; display: none;"></div>
+            </div>
+
+            <!-- Ajout de la légende Tsunami -->
+            <div class="section" style="padding-top: 10px; padding-bottom: 10px; background-color: rgba(36, 51, 66, 0.5);">
+                <details>
+                    <summary style="font-size: 0.85rem; color: #ECF0F1; font-weight: bold; cursor: pointer; outline: none; user-select: none;">🌊 Risque Tsunami & Cadre Légal :<span class="pulse-dot" title="Cliquez pour déplier"></span></summary>
+                    <div style="font-size: 0.8rem; color: #BDC3C7; line-height: 1.6; margin-top: 8px; padding-left: 18px;">
+                        <span style="color: #E74C3C;">🔴 &lt; 10m : Vigilance renforcée (Non-conforme ORSEC)</span><br>
+                        <span style="color: #F39C12;">🟠 ≈ 10 à 12m : Zone de seuil (Seuil critique ORSEC)</span><br>
+                        <span style="color: #2ECC71;">🟢 &gt; 12 à 30m : Vigilance (Conforme ORSEC &gt; 10m)</span><br>
+                        <span style="color: #3498DB;">🔵 &ge; 30m : Refuge potentiel (Optimisation PPMS)</span><br>
+
+                        <div style="margin-top: 10px; padding: 6px 8px; background-color: rgba(41, 128, 185, 0.2); border-left: 3px solid #3498DB; font-size: 0.8rem; color: #ECF0F1; border-radius: 0 4px 4px 0;">
+                            🖱️ <strong>Astuce PPMS :</strong> Effectuez un <strong>double-clic</strong> n'importe où sur la carte pour sonder une zone avec précision et l'ajouter comme Point de Rassemblement.
+                        </div>
+
+                        <div style="margin-top: 10px; padding-top: 6px; border-top: 1px dashed #34495E; font-size: 0.75rem; font-style: italic;">
+                            Basé sur le Plan ORSEC Tsunami (rejoindre une zone > 10m d'altitude) et les directives d'élaboration des PPMS unifiés (Loi Matras).
+                        </div>
+                    </div>
+                </details>
+            </div>
+
+            <div class="section" style="border-bottom: none; padding-bottom: 0;">
+                <div class="section-title">
+                    Points sur la carte
+                    <span id="eple-count" style="background: var(--bg-dark); padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; color: #fff;">0</span>
+                </div>
+            </div>
+
+            <div id="eple-list-container">
+                <!-- Les cartes EPLE et PR s'afficheront ici -->
+            </div>
+        </aside>
+
+        <main id="map-container">
+            <div id="map"></div>
+        </main>
+
+    </div>
+
+    <!-- Modale de Notice -->
+    <div id="modal-notice" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="close-notice">&times;</span>
+            <h2>Notice : PERDIRFORMANCE GEST-TSUNAMI V1</h2>
+            
+            <p>Cet outil d'analyse géographique et altimétrique a été repensé pour fournir aux équipes de direction une vision macroscopique des implantations scolaires.</p>
+            
+            <h3>1. Cartographie (Guadeloupe)</h3>
+            <ul>
+                <li>L'application s'ouvre directement sur une carte interactive de la Guadeloupe.</li>
+                <li>Utilisez l'icône en haut à droite de la carte pour basculer entre le <strong>Plan IGN V2</strong> et la <strong>Vue Satellite (Ortho IGN)</strong>.</li>
+            </ul>
+
+            <h3>2. Recherche et Altimétrie</h3>
+            <ul>
+                <li>Saisissez le code RNE/UAI d'un établissement (ex: 9710001A).</li>
+                <li>L'outil interroge l'API de l'Éducation Nationale pour obtenir les coordonnées GPS exactes.</li>
+                <li>Il croise ensuite ces données avec le service d'altimétrie de la <strong>Géoplateforme IGN</strong> pour calculer l'altitude du site.</li>
+            </ul>
+
+            <h3>3. 📢 Se préparer à une évacuation en cas d'alerte</h3>
+            <ul>
+                <li>➡️ Lien : <a href="https://exploit.univ-montp3.fr/m/" target="_blank" style="color: var(--accent);">https://exploit.univ-montp3.fr/m/</a></li>
+            </ul>
+
+            <h3>4. Cadre Institutionnel et Réglementaire</h3>
+            <ul>
+                <li><strong>Loi Matras (Loi n° 2021-1520) & BOEN :</strong> L'outil aide à la conception et mise à jour du <em>Plan Particulier de Mise en Sûreté (PPMS) unifié</em>, de la compétence conjointe DSDEN/Rectorat et collectivités.</li>
+                <li><strong>Plan ORSEC Tsunami (Préfecture & DEAL) :</strong> La consigne d'évacuation immédiate (alerte rouge/violette) impose de rejoindre un point haut situé à <strong>plus de 10 mètres d'altitude</strong> ou à plus de 2 km à l'intérieur des terres.</li>
+                <li><strong>Code de l'éducation (Art. L312-13-1) :</strong> L'éducation à la prévention des risques majeurs. La catégorisation altimétrique de l'application s'appuie sur les standards testés lors des exercices inter-caribéens annuels (<em>Caribe Wave</em>).</li>
+            </ul>
+
+            <h3>5. Gestion des données</h3>
+            <ul>
+                <li>Tous les points (EPLE et Rassemblement) s'ajoutent à la liste.</li>
+                <li>Enregistrez votre cartographie au format <code>.json</code> ou imprimez directement la carte pour l'annexer à votre PPMS.</li>
+            </ul>
+            
+            <button class="btn btn-full btn-action" id="close-notice-btn" style="margin-top: 15px; font-size: 1rem;">✓ J'ai compris, fermer la notice</button>
+        </div>
+    </div>
+
+    <footer id="main-footer">
+        GEST-TSUNAMI | PERDIRFORMANCE | 2026 à l'aide de l'IA générative.
+    </footer>
+
+    <script>
+        // --- ÉTAT DE L'APPLICATION ---
+        let state = {
+            eples: [] // Structure: { id, type ('eple'|'pr'), rne, name, lat, lng, alt, address, city }
+        };
+
+        // --- INITIALISATION DE LA CARTE LEAFLET ---
+        // Recentrage et zoom ajusté à 11 pour éviter les bords blancs
+        // Désactivation du zoom au double clic pour permettre le sondage
+        const map = L.map('map', { 
+            doubleClickZoom: false,
+            zoomControl: false // Désactivation du zoom par défaut (qui est en haut à gauche)
+        }).setView([16.250, -61.580], 11);
+
+        // Repositionnement du contrôle de zoom en bas à droite pour laisser la place au radar
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        const ignPlanLayer = L.tileLayer('https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.ign.fr/">IGN</a>'
+        });
+
+        const ignOrthoLayer = L.tileLayer('https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.ign.fr/">IGN</a>'
+        });
+
+        ignPlanLayer.addTo(map);
+
+        const baseMaps = {
+            "Plan IGN V2": ignPlanLayer,
+            "Satellite (Ortho IGN)": ignOrthoLayer
+        };
+        
+        // Déplacement du sélecteur de calques (fonds de carte) en haut à gauche
+        L.control.layers(baseMaps, null, { position: 'topleft' }).addTo(map);
+
+        const markersGroup = L.featureGroup().addTo(map);
+
+        // --- RADAR TOPOGRAPHIQUE (Innovation) ---
+        const RadarControl = L.Control.extend({
+            options: { position: 'topright' }, // Le radar reste/se met en haut à droite
+            onAdd: function() {
+                const div = L.DomUtil.create('div', 'radar-panel');
+                div.innerHTML = `
+                    <div class="radar-title"><span class="radar-scanning"></span> Radar Topographique</div>
+                    <div class="radar-data"><span style="color:#BDC3C7;">Lat:</span> <span id="radar-lat" class="radar-value">--.-----</span></div>
+                    <div class="radar-data"><span style="color:#BDC3C7;">Lng:</span> <span id="radar-lng" class="radar-value">--.-----</span></div>
+                    <div class="radar-data" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(255,255,255,0.2);">
+                        <span style="color:#BDC3C7;">Alt (IGN):</span> <span id="radar-alt" class="radar-value" style="color: #F39C12;">En attente</span>
+                    </div>
+                `;
+                return div;
+            }
+        });
+        map.addControl(new RadarControl());
+
+        let radarTimeout = null;
+
+        map.on('mousemove', function(e) {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+
+            // Affichage instantané et fluide des coordonnées
+            document.getElementById('radar-lat').textContent = lat.toFixed(5);
+            document.getElementById('radar-lng').textContent = lng.toFixed(5);
+            
+            const altEl = document.getElementById('radar-alt');
+            altEl.textContent = "Balayage...";
+            altEl.style.color = "#BDC3C7";
+
+            // Anti-spam pour préserver l'API IGN : on attend que la souris s'arrête 500ms
+            clearTimeout(radarTimeout);
+            radarTimeout = setTimeout(async () => {
+                altEl.textContent = "Calcul...";
+                try {
+                    const alt = await fetchAltitude(lat, lng);
+                    if (alt !== "N/A") {
+                        const risk = getTsunamiRisk(alt);
+                        // On affiche uniquement l'altitude avec le code couleur de sécurité intégré
+                        altEl.textContent = `${alt} m`;
+                        altEl.style.color = risk.color;
+                    } else {
+                        altEl.textContent = "N/A";
+                        altEl.style.color = "#7F8C8D";
+                    }
+                } catch (err) {
+                    altEl.textContent = "Erreur";
+                    altEl.style.color = "#E74C3C";
+                }
+            }, 500); 
+        });
+
+        // Remise à zéro quand on sort de la carte
+        map.on('mouseout', function() {
+            clearTimeout(radarTimeout);
+            document.getElementById('radar-lat').textContent = "--.-----";
+            document.getElementById('radar-lng').textContent = "--.-----";
+            document.getElementById('radar-alt').textContent = "En attente";
+            document.getElementById('radar-alt').style.color = "#F39C12";
+        });
+
+
+        // --- CHARGEMENT DE L'ANNUAIRE (API EDUCATION NATIONALE) ---
+        async function loadEPLEList() {
+            const select = document.getElementById('eple-select');
+            try {
+                const url = `https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-en-annuaire-education/records?where=code_departement="971" AND statut_public_prive="Public" AND type_etablissement IN ("Collège", "Lycée", "Lycée professionnel", "Lycée polyvalent", "Lycée général et technologique", "Lycée des métiers")&limit=100`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.results && data.results.length > 0) {
+                    const eples = data.results.sort((a, b) => a.nom_commune.localeCompare(b.nom_commune) || a.nom_etablissement.localeCompare(b.nom_etablissement));
+                    
+                    select.innerHTML = '<option value="">-- Sélectionnez un EPLE public (971) --</option>';
+                    eples.forEach(eple => {
+                        const option = document.createElement('option');
+                        option.value = eple.identifiant_de_l_etablissement;
+                        option.textContent = `${eple.nom_commune} - ${eple.nom_etablissement}`;
+                        select.appendChild(option);
+                    });
+                } else {
+                    select.innerHTML = '<option value="">Aucun établissement trouvé</option>';
+                }
+            } catch (error) {
+                console.error("Erreur de chargement de l'annuaire :", error);
+                select.innerHTML = '<option value="">Erreur de connexion à l\'annuaire MENJ</option>';
+            }
+        }
+
+        document.getElementById('eple-select').addEventListener('change', function() {
+            const selectedRNE = this.value;
+            if (selectedRNE) {
+                document.getElementById('rne-input').value = selectedRNE;
+                document.getElementById('btn-search-rne').click();
+                this.value = "";
+            }
+        });
+
+        // --- EVALUATION DU RISQUE TSUNAMI ---
+        function getTsunamiRisk(altitude) {
+            if (altitude === "N/A" || altitude === null) {
+                return { type: "unknown", color: "#95A5A6", border: "#7F8C8D", label: "Inconnu", desc: "Donnée altimétrique manquante.", norme: "Vérification terrain indispensable (PPMS)." };
+            }
+            const alt = parseFloat(altitude);
+            if (alt < 10) {
+                return { type: "danger", color: "#E74C3C", border: "#C0392B", label: "Vigilance renforcée (< 10m)", desc: "Zone littorale potentiellement exposée à la submersion. Vérification PPMS / évacuation requise.", norme: "Non-conforme Plan ORSEC Tsunami (>10m requis). Évacuation obligatoire." };
+            } else if (alt >= 10 && alt <= 12) {
+                return { type: "warning", color: "#F39C12", border: "#D68910", label: "Zone de seuil (≈ 10-12m)", desc: "Incertitude possible selon la précision des données. À traiter comme prioritaire pour vérification.", norme: "Seuil critique ORSEC. À croiser avec le PPRN local." };
+            } else if (alt > 12 && alt < 30) {
+                return { type: "safe", color: "#2ECC71", border: "#27AE60", label: "Vigilance (> 12m)", desc: "Au-dessus du seuil local. Attention, ne signifie pas “absence de risque”.", norme: "Conforme doctrine ORSEC/DEAL (Mise à l'abri > 10m)." };
+            } else {
+                return { type: "refuge", color: "#3498DB", border: "#2980B9", label: "Refuge potentiel (≥ 30m)", desc: "Repère prudent pour zone de rassemblement sûre. À valider avec les autorités locales.", norme: "Recommandation optimale PPMS (Réf: Caribe Wave)." };
+            }
+        }
+
+        // --- SYNTHÈSE SONORE (Web Audio API) ---
+        let audioCtx = null;
+        function playRiskSound(type) {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            const now = audioCtx.currentTime;
+            gainNode.gain.setValueAtTime(0.05, now);
+
+            if (type === 'danger') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(880, now);
+                osc.frequency.setValueAtTime(1108, now + 0.1);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'warning') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.linearRampToValueAtTime(349, now + 0.2);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                osc.start(now); osc.stop(now + 0.25);
+            } else if (type === 'safe') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                osc.start(now); osc.stop(now + 0.4);
+            } else if (type === 'refuge') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.setValueAtTime(659.25, now + 0.1);
+                osc.frequency.setValueAtTime(783.99, now + 0.2);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                osc.start(now); osc.stop(now + 0.6);
+            }
+        }
+
+        // --- ALTIMETRIE IGN (API Géoplateforme) ---
+        async function fetchAltitude(lat, lng) {
+            try {
+                const response = await fetch(`https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevation.json?lon=${lng}&lat=${lat}&resource=ign_rge_alti_wld`);
+                const data = await response.json();
+                if (data && data.elevations && data.elevations.length > 0) {
+                    if (data.elevations[0].z > -1000) {
+                        return Math.round(data.elevations[0].z);
+                    }
+                }
+            } catch (error) {
+                console.warn("Erreur lors de la récupération de l'altitude IGN :", error);
+            }
+            return "N/A";
+        }
+
+        // --- ANALYSE LIBRE ET POINTS DE RASSEMBLEMENT ---
+        map.on('dblclick', async function(e) {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+
+            const popup = L.popup()
+                .setLatLng(e.latlng)
+                .setContent(`<div style="text-align:center; color:#BDC3C7;">Sondage altimétrique IGN...<br><span style="font-size:0.8rem;">Patientez svp</span></div>`)
+                .openOn(map);
+
+            try {
+                const alt = await fetchAltitude(lat, lng);
+                const risk = getTsunamiRisk(alt);
+                
+                playRiskSound(risk.type);
+
+                const popupContent = `
+                    <h3 style="color:${risk.color}; border-bottom: 1px solid ${risk.color}55; padding-bottom: 5px; margin-bottom: 8px;">Point sondé</h3>
+                    <p><strong>Latitude :</strong> ${lat.toFixed(5)}</p>
+                    <p><strong>Longitude :</strong> ${lng.toFixed(5)}</p>
+                    <p><strong>Altitude IGN :</strong> ${alt !== 'N/A' ? alt + ' m' : 'N/A'}</p>
+                    <p><strong>Risque Tsunami :</strong> <span style="color:${risk.color}; font-weight:bold;">${risk.label}</span></p>
+                    <p style="margin-top: 4px;"><strong>Réglementation :</strong> <span style="color:#ECF0F1; font-size:0.8rem; background-color:#34495E; padding:2px 4px; border-radius:3px;">${risk.norme}</span></p>
+                    <p style="font-size:0.8rem; color:#7F8C8D; margin-top:8px; line-height:1.3; background:var(--bg-dark); padding:8px; border-left: 3px solid ${risk.color}; border-radius:4px;"><i>${risk.desc}</i></p>
+                    
+                    <div style="margin-top: 15px; border-top: 1px dashed #34495E; padding-top: 12px;">
+                        <label style="font-size: 0.8rem; color: #BDC3C7; display:block; margin-bottom:4px;">Nommer ce lieu refuge (PPMS) :</label>
+                        <input type="text" id="pr-name-input" placeholder="Ex: Stade municipal..." style="width: 100%; padding: 8px; margin-bottom: 8px; background: #1A2530; border: 1px solid #34495E; color: white; border-radius: 4px;">
+                        <button class="btn btn-accent btn-full" style="padding: 8px; font-size: 0.85rem;" onclick="savePR(${lat}, ${lng}, '${alt}')">⭐ Mettre en favoris (PR)</button>
+                    </div>
+                `;
+                
+                popup.setContent(popupContent);
+            } catch (error) {
+                popup.setContent(`<div style="color:#E74C3C;">Erreur de sondage altimétrique.</div>`);
+            }
+        });
+
+        // Fonction globale pour sauvegarder le Point de Rassemblement depuis le popup
+        window.savePR = function(lat, lng, altStr) {
+            const nameInput = document.getElementById('pr-name-input');
+            let prName = nameInput ? nameInput.value.trim() : "";
+            if (!prName) prName = "Point de Rassemblement (PR)";
+
+            // On s'assure que 'N/A' reste 'N/A', sinon on repasse en nombre
+            const alt = altStr === 'N/A' ? 'N/A' : parseFloat(altStr);
+
+            const newPR = {
+                id: 'pr_' + Date.now().toString(),
+                type: 'pr', // Identification spécifique
+                rne: '-',
+                name: prName,
+                lat: lat,
+                lng: lng,
+                alt: alt,
+                address: 'Coordonnées GPS mémorisées',
+                city: 'Localisation manuelle'
+            };
+
+            state.eples.push(newPR);
+            map.closePopup();
+            updateUI();
+            saveData();
+        };
+
+        // --- RECHERCHE PAR RNE ---
+        document.getElementById('btn-search-rne').addEventListener('click', async () => {
+            const rne = document.getElementById('rne-input').value.trim().toUpperCase();
+            const resultDiv = document.getElementById('rne-result');
+            
+            if (!rne) return;
+
+            if (state.eples.find(e => e.rne === rne && e.type !== 'pr')) {
+                resultDiv.style.color = '#F39C12';
+                resultDiv.textContent = `L'établissement ${rne} est déjà sur la carte.`;
+                return;
+            }
+
+            resultDiv.style.display = 'block';
+            resultDiv.style.color = '#BDC3C7';
+            resultDiv.textContent = 'Recherche dans l\'annuaire national...';
+
+            try {
+                const url = `https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-en-annuaire-education/records?where=identifiant_de_l_etablissement="${rne}"&limit=1`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.results && data.results.length > 0) {
+                    const etab = data.results[0];
+                    if (etab.latitude && etab.longitude) {
+                        const lat = parseFloat(etab.latitude);
+                        const lng = parseFloat(etab.longitude);
+                        
+                        resultDiv.textContent = `Établissement trouvé. Calcul de l'altitude IGN...`;
+
+                        const alt = await fetchAltitude(lat, lng);
+                        
+                        const newEple = {
+                            id: Date.now().toString(),
+                            type: 'eple',
+                            rne: rne,
+                            name: etab.nom_etablissement,
+                            lat: lat,
+                            lng: lng,
+                            alt: alt,
+                            address: etab.adresse_1,
+                            city: etab.nom_commune
+                        };
+
+                        state.eples.push(newEple);
+                        
+                        const risk = getTsunamiRisk(alt);
+                        playRiskSound(risk.type);
+                        
+                        resultDiv.style.color = '#2ECC71';
+                        resultDiv.textContent = `✓ Ajouté avec succès.`;
+                        document.getElementById('rne-input').value = '';
+
+                        updateUI();
+                        saveData();
+                    } else {
+                        resultDiv.style.color = '#E74C3C';
+                        resultDiv.textContent = `Coordonnées GPS manquantes pour ce RNE.`;
+                    }
+                } else {
+                    resultDiv.style.color = '#E74C3C';
+                    resultDiv.textContent = `Établissement introuvable.`;
+                }
+            } catch (error) {
+                resultDiv.style.color = '#E74C3C';
+                resultDiv.textContent = `Erreur réseau avec l'API de l'Éducation Nationale.`;
+            }
+        });
+
+        document.getElementById('rne-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                document.getElementById('btn-search-rne').click();
+            }
+        });
+
+        // --- SCAN COMPLET GENERIQUE DES EPLE ---
+        async function scanRisk(conditionFunction) {
+            const progressDiv = document.getElementById('scan-progress');
+            const allScanBtns = document.querySelectorAll('.btn-scan');
+            
+            allScanBtns.forEach(btn => btn.disabled = true);
+            
+            progressDiv.style.display = 'block';
+            progressDiv.textContent = 'Chargement de la base MENJ...';
+
+            try {
+                const url = `https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-en-annuaire-education/records?where=code_departement="971" AND statut_public_prive="Public" AND type_etablissement IN ("Collège", "Lycée", "Lycée professionnel", "Lycée polyvalent", "Lycée général et technologique", "Lycée des métiers")&limit=100`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (!data.results) throw new Error("Aucune donnée reçue de l'annuaire");
+                
+                const eples = data.results;
+                let countChecked = 0;
+                let countAdded = 0;
+
+                for (const etab of eples) {
+                    countChecked++;
+                    progressDiv.textContent = `Analyse altimétrique IGN : ${countChecked}/${eples.length}...`;
+                    
+                    if (etab.latitude && etab.longitude) {
+                        const rne = etab.identifiant_de_l_etablissement;
+                        
+                        if (!state.eples.find(e => e.rne === rne)) {
+                            const lat = parseFloat(etab.latitude);
+                            const lng = parseFloat(etab.longitude);
+                            const alt = await fetchAltitude(lat, lng);
+                            
+                            if (alt !== "N/A" && conditionFunction(alt)) {
+                                const newEple = {
+                                    id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                                    type: 'eple',
+                                    rne: rne,
+                                    name: etab.nom_etablissement,
+                                    lat: lat,
+                                    lng: lng,
+                                    alt: alt,
+                                    address: etab.adresse_1,
+                                    city: etab.nom_commune
+                                };
+                                state.eples.push(newEple);
+                                countAdded++;
+                                
+                                const risk = getTsunamiRisk(alt);
+                                playRiskSound(risk.type);
+                                
+                                updateUI(); 
+                            }
+                        }
+                    }
+                    await new Promise(r => setTimeout(r, 150)); 
+                }
+                
+                saveData();
+                progressDiv.textContent = `Terminé ! ${countAdded} EPLE détectés et ajoutés.`;
+                progressDiv.style.color = '#2ECC71';
+                
+            } catch (error) {
+                progressDiv.textContent = `Erreur : ${error.message}`;
+                progressDiv.style.color = '#E74C3C';
+            } finally {
+                allScanBtns.forEach(btn => btn.disabled = false);
+                setTimeout(() => { 
+                    progressDiv.style.display = 'none'; 
+                    progressDiv.style.color = '#BDC3C7';
+                }, 6000);
+            }
+        }
+
+        document.getElementById('btn-scan-red').addEventListener('click', () => scanRisk(alt => alt < 10));
+        document.getElementById('btn-scan-orange').addEventListener('click', () => scanRisk(alt => alt >= 10 && alt <= 12));
+        document.getElementById('btn-scan-green').addEventListener('click', () => scanRisk(alt => alt > 12 && alt < 30));
+        document.getElementById('btn-scan-blue').addEventListener('click', () => scanRisk(alt => alt >= 30));
+
+
+        // --- TOUT EFFACER ---
+        document.getElementById('btn-clear-all').addEventListener('click', () => {
+            state.eples = []; 
+            updateUI();       
+            saveData();       
+        });
+
+        // --- MISE A JOUR DE L'INTERFACE & CARTE ---
+        function updateUI() {
+            const listContainer = document.getElementById('eple-list-container');
+            const countBadge = document.getElementById('eple-count');
+            
+            listContainer.innerHTML = '';
+            markersGroup.clearLayers();
+            
+            countBadge.textContent = state.eples.length;
+
+            if (state.eples.length === 0) {
+                listContainer.innerHTML = '<p style="color:#7F8C8D; font-size:0.9rem; text-align:center; margin-top:20px;">Aucune donnée sur la carte.</p>';
+            }
+
+            state.eples.forEach(eple => {
+                const risk = getTsunamiRisk(eple.alt);
+                const isPR = eple.type === 'pr'; // Vérifie si c'est un point de rassemblement personnalisé
+
+                // 1. AJOUT DANS LA BARRE LATÉRALE
+                const card = document.createElement('div');
+                card.className = 'eple-card';
+                card.style.borderLeftColor = risk.color; 
+                
+                // Différenciation visuelle entre EPLE et PR
+                const titleStr = isPR ? `⭐ ${eple.name}` : eple.name;
+                const rneStr = isPR ? `<span style="color:#F39C12; font-weight:bold;">Point de rassemblement PPMS</span>` : `RNE : ${eple.rne}`;
+
+                card.innerHTML = `
+                    <button class="btn-del-eple" onclick="deleteEple('${eple.id}')" title="Supprimer">×</button>
+                    <h4>${titleStr}</h4>
+                    <div class="details">${rneStr}<br>${eple.city}</div>
+                    <div class="altitude" style="background-color: ${risk.color}22; color: ${risk.color}; border: 1px solid ${risk.color}55;">
+                        🌊 Tsunami : ${risk.label} | 🏔️ Alt: ${eple.alt} m
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-action" style="font-size:0.8rem; padding:4px 8px;" onclick="centerMapOn(${eple.lat}, ${eple.lng})">📍 Centrer la carte</button>
+                    </div>
+                `;
+                listContainer.appendChild(card);
+
+                // 2. AJOUT SUR LA CARTE LEAFLET
+                let marker;
+
+                if (isPR) {
+                    // Marqueur Carré Spécifique "Point de Rassemblement"
+                    const prIcon = L.divIcon({
+                        className: 'custom-pr-icon',
+                        html: `<div style="background-color: ${risk.color}; border: 2px solid white; border-radius: 4px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.6);"><span style="color: white; font-weight: bold; font-size: 13px;">PR</span></div>`,
+                        iconSize: [28, 28],
+                        iconAnchor: [14, 14]
+                    });
+                    marker = L.marker([eple.lat, eple.lng], { icon: prIcon });
+                } else {
+                    // Pastille Classique EPLE
+                    const markerOpts = {
+                        radius: 8,
+                        fillColor: risk.color,
+                        color: risk.border,
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.9
+                    };
+                    marker = L.circleMarker([eple.lat, eple.lng], markerOpts);
+                }
+                
+                const popupContent = `
+                    <h3>${titleStr}</h3>
+                    <p><strong>${isPR ? 'Catégorie :' : 'RNE :'}</strong> ${isPR ? 'Zone Refuge / Alternative' : eple.rne}</p>
+                    <p><strong>Commune :</strong> ${eple.city}</p>
+                    <p><strong>Altitude IGN :</strong> ${eple.alt} m</p>
+                    <p><strong>Risque Tsunami :</strong> <span style="color:${risk.color}; font-weight:bold;">${risk.label}</span></p>
+                    <p style="margin-top: 4px;"><strong>Réglementation :</strong> <span style="color:#ECF0F1; font-size:0.8rem; background-color:#34495E; padding:2px 4px; border-radius:3px;">${risk.norme}</span></p>
+                    <p style="font-size:0.8rem; color:#7F8C8D; margin-top:5px; line-height:1.3; background:var(--bg-dark); padding:6px; border-radius:4px;"><i>${risk.desc}</i></p>
+                `;
+                marker.bindPopup(popupContent);
+                marker.bindTooltip(titleStr, { direction: 'top', offset: [0, -10] });
+                marker.addTo(markersGroup);
+            });
+
+            // Ne pas centrer systématiquement si c'est juste un ajout manuel via map click pour éviter un sursaut désagréable
+        }
+
+        // --- ACTIONS SUR LES EPLE ---
+        window.deleteEple = function(id) {
+            state.eples = state.eples.filter(e => e.id !== id);
+            updateUI();
+            saveData();
+        };
+
+        window.centerMapOn = function(lat, lng) {
+            map.flyTo([lat, lng], 16, { duration: 1.5 });
+        };
+
+
+        // --- SAUVEGARDE ET IMPORT/EXPORT ---
+        function saveData() {
+            localStorage.setItem('perdirformance_carto_eple', JSON.stringify(state));
+        }
+
+        function loadData(jsonString) {
+            try {
+                const data = JSON.parse(jsonString);
+                if (data && data.eples) {
+                    // rétrocompatibilité: définir le type par défaut si manquant sur les anciennes sauvegardes
+                    state.eples = data.eples.map(e => ({...e, type: e.type || 'eple'})); 
+                    updateUI();
+                    if(state.eples.length > 0) {
+                        setTimeout(() => { map.fitBounds(markersGroup.getBounds(), { padding: [30, 30] }); }, 500);
+                    }
+                }
+            } catch (e) {
+                console.error("Échec du chargement des données.");
+                alert("Le fichier sélectionné est invalide.");
+            }
+        }
+
+        document.getElementById('btn-export').addEventListener('click', () => {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", "cartographie_altimetrie_eple.json");
+            dlAnchorElem.click(); dlAnchorElem.remove();
+        });
+
+        document.getElementById('btn-import').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => loadData(event.target.result);
+            reader.readAsText(file);
+            e.target.value = ''; 
+        });
+
+        // --- IMPRESSION ---
+        document.getElementById('btn-print').addEventListener('click', () => {
+            // On recalcule la taille de la carte pour le format A4 Paysage
+            // sans forcer le dézoom, pour imprimer le cadrage exact travaillé par l'utilisateur
+            map.invalidateSize();
+            setTimeout(() => { window.print(); }, 500);
+        });
+
+        // --- HORLOGE ET MODALE ---
+        function updateHeaderClock() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            document.getElementById('current-datetime').textContent = `${dateStr} - ${timeStr}`;
+        }
+        setInterval(updateHeaderClock, 1000); updateHeaderClock();
+
+        const modalNotice = document.getElementById('modal-notice');
+        document.getElementById('btn-notice').addEventListener('click', () => modalNotice.classList.add('show') );
+        document.getElementById('close-notice').addEventListener('click', () => modalNotice.classList.remove('show') );
+        document.getElementById('close-notice-btn').addEventListener('click', () => modalNotice.classList.remove('show') );
+        window.addEventListener('click', (e) => { if (e.target === modalNotice) modalNotice.classList.remove('show'); });
+
+
+        // --- INITIALISATION AU DEMARRAGE ---
+        function init() {
+            loadEPLEList(); 
+            const saved = localStorage.getItem('perdirformance_carto_eple');
+            if (saved) {
+                loadData(saved);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
